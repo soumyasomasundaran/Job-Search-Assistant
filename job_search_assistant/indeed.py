@@ -1,4 +1,4 @@
-from bs4 import BeautifulSoup 
+from bs4 import BeautifulSoup
 import requests
 
 
@@ -23,19 +23,17 @@ def extract_job(html):
     :param html: Tag
     :return: dict[str,str]  
     """
-    title = html.find('h2').text
+    title = html.find('span',title=True).string
     company = html.find('span',{"class":"companyName"}).text
     location = html.find('div',{'class':"companyLocation"}).text
-    apply_link = (html.find('td',{'class':"resultContent"}).a)['data-jk']
+    job_id = (html.find('td',{'class':"resultContent"}).a)['data-jk']
 
     return {
         "title":title,
         "company":company,
         "location":location,
-        "apply_link":apply_link
-    
+        "apply_link":f"https://www.indeed.com/jobs?l=england&vjk={job_id}"
     }
-
 
 
 
@@ -46,12 +44,13 @@ def extract_jobs(url,last_page_num):
     :param last_page_num : int
     :return: list[dict[str,str]]
     """
-
+    jobs = []
     for i in range(last_page_num):
         response = requests.get(url)
         soup = BeautifulSoup(response.text,'html.parser')
         divs = soup.find_all("div", {"class":"slider_container"})
-        jobs = [extract_job(div) for div in divs]
+        for div in divs:
+            jobs.append(extract_job(div))
             
 
     return jobs
@@ -65,11 +64,9 @@ def get_jobs(search_term):
     """
     url = BASE_URL + f"/jobs?q={search_term}&l&vjk=467a04b2be1976cb"
     last_page_num = extract_last_page_num(url)
-    print(extract_jobs(url,last_page_num))
+    return extract_jobs(url,last_page_num)
     
-    # 3. Extract jobs
-    # 4. Return Jobs
+    
 
-
-
-get_jobs("java")
+if __name__ == '__main__':    
+    print(get_jobs("java"))
